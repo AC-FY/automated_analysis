@@ -32,7 +32,7 @@ def read_docx_folder(folder_path):
             docs.append(full_text)
     return docs
 
-folder_path = "/Users/AndyCheng/Documents/202507transcripts"
+folder_path = "/Users/cpost/Documents/202507transcripts"
 raw_docs = read_docx_folder(folder_path)
 tokenized_docs = [nltk_preprocess(doc) for doc in raw_docs]
 docs_for_bert = [" ".join(tokens) for tokens in tokenized_docs]
