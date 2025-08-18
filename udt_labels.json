@@ -1,0 +1,108 @@
+{
+  "name": "New Dataset",
+  "interface": {
+    "type": "text_classification",
+    "labels": [
+      {
+        "id": "Masculinity",
+        "displayName": "Masculinity",
+        "description": ""
+      },
+      {
+        "id": "Substances",
+        "displayName": "Substances",
+        "description": ""
+      },
+      {
+        "id": "Misogyny",
+        "displayName": "Misogyny"
+      },
+      {
+        "id": "Racism",
+        "displayName": "Racism"
+      },
+      {
+        "id": "Anti-justice system",
+        "displayName": "Anti-justice system"
+      },
+      {
+        "id": "Infighting",
+        "displayName": "Infighting"
+      },
+      {
+        "id": "J6",
+        "displayName": "J6"
+      },
+      {
+        "id": "Movement-building",
+        "displayName": "Movement-building"
+      },
+      {
+        "id": "Homophobia",
+        "displayName": "Homophobia"
+      },
+      {
+        "id": "Jail",
+        "displayName": "Jail"
+      },
+      {
+        "id": "Memes",
+        "displayName": "Memes"
+      },
+      {
+        "id": "Trump",
+        "displayName": "Trump"
+      },
+      {
+        "id": "Transphobia",
+        "displayName": "Transphobia"
+      },
+      {
+        "id": "Abortion",
+        "displayName": "Abortion"
+      },
+      {
+        "id": "Christianity",
+        "displayName": "Christianity"
+      },
+      {
+        "id": "Conspiracies",
+        "displayName": "Conspiracies"
+      },
+      {
+        "id": "Anti-woke",
+        "displayName": "Anti-woke"
+      },
+      {
+        "id": "Policies",
+        "displayName": "Policies"
+      },
+      {
+        "id": "Civic call to action",
+        "displayName": "Civic call to action"
+      },
+      {
+        "id": "Economics call to action",
+        "displayName": "Economics call to action"
+      },
+      {
+        "id": "Violent call to action",
+        "displayName": "Violent call to action"
+      }
+    ]
+  },
+  "samples": [
+    {
+      "_id": "sht69j0od",
+      "document": "Wow this is terrible. I hated it."
+    },
+    {
+      "_id": "s4n9e147r",
+      "document": "This has made me so happy. I love this."
+    },
+    {
+      "_id": "sl5w55z6e",
+      "document": "At first I wasn't sure. Then I thought, oh it's not very good."
+    }
+  ]
+}
