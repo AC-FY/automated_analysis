@@ -39,9 +39,8 @@ def read_docx_sentences(folder_path: str) -> list[str]:
                         sentences.append(sentence.strip())
     return sentences
 
-#Change directory location here#
 if __name__ == "__main__":
-    folder_path = "/Users/cpost/Documents/202507transcripts"
+    folder_path = "/Users/AndyCheng/Documents/202507transcripts"
 
     raw_sentences = read_docx_sentences(folder_path)
     tokenized_sentences = [nltk_preprocess(sent) for sent in raw_sentences]
@@ -52,7 +51,7 @@ if __name__ == "__main__":
 
     dictionary = Dictionary(tokenized_sentences)
     corpus = [dictionary.doc2bow(text) for text in tokenized_sentences]
-    lda_model = LdaModel(corpus=corpus, id2word=dictionary, num_topics=15, passes=25) #Change number of topics (k) at num_topics#
+    lda_model = LdaModel(corpus=corpus, id2word=dictionary, num_topics=15, passes=25)
     lda_distributions = [
         lda_model.get_document_topics(doc, minimum_probability=0) for doc in corpus
     ]
