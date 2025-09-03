@@ -12,8 +12,9 @@ def read_urls_from_csv(csv_filename):
                 urls.append(row[0])
     return urls
 
-#downloaded .mp3 files will be automatically placed in a "downloads" folder inside the scraper folder
-def bulk_download(urls, output_dir="downloads"):
+#downloaded .mp3 files will be automatically placed in the "downloads" folder inside the scraper folder
+    #"downloads" will be created automatically when running this file for the first time
+def bulk_download(urls, output_dir="downloads"):        #change output folder name here
     os.makedirs(output_dir, exist_ok=True)
 
     ydl_opts = {
@@ -31,7 +32,7 @@ def bulk_download(urls, output_dir="downloads"):
         ydl.download(urls)
 
 if __name__ == "__main__":
-    # ensure your CSV has a header row, with URLs in the first column
+    #build dateframe
     csv_filename = "rumble_videos.csv"
     urls = read_urls_from_csv(csv_filename)
     print(f"Found {len(urls)} URLs to download as MP3")
