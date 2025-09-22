@@ -2,7 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 from docx import Document
-import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
@@ -13,9 +12,9 @@ from sklearn.preprocessing import normalize
 import umap
 import hdbscan
 from bertopic import BERTopic
+import nltk
 
-
-stop_words = set(stopwords.words('english'))
+stop_words = set(stopwords.words('english')) #stopword library; do not touch
 lemmatizer = WordNetLemmatizer()
 
 def nltk_preprocess(text):
@@ -33,18 +32,17 @@ def read_docx_folder(folder_path):
             docs.append(full_text)
     return docs
 
-#change path to directory here
-folder_path = "/Users/AndyCheng/Documents/202507transcripts"
+folder_path = "/Users/AndyCheng/Documents/202507transcripts" #change folder location (use \ on Windows)
 raw_docs = read_docx_folder(folder_path)
 tokenized_docs = [nltk_preprocess(doc) for doc in raw_docs]
 docs_for_bert = [" ".join(tokens) for tokens in tokenized_docs]
 
-bert_model = SentenceTransformer("all-MiniLM-L6-v2")
+bert_model = SentenceTransformer("all-MiniLM-L6-v2") #sentence transformer model; change model here
 bert_embeddings = bert_model.encode(docs_for_bert, show_progress_bar=True)
 
 dictionary = Dictionary(tokenized_docs)
 corpus = [dictionary.doc2bow(text) for text in tokenized_docs]
-lda_model = LdaModel(corpus=corpus, id2word=dictionary, num_topics=15, passes=25) #num_topics = betak: change here#
+lda_model = LdaModel(corpus=corpus, id2word=dictionary, num_topics=15, passes=25) #number of topics (beta k); change num_topics here
 lda_distributions = [lda_model.get_document_topics(doc, minimum_probability=0) for doc in corpus]
 lda_array = np.array([[prob for _, prob in doc] for doc in lda_distributions])
 
@@ -75,5 +73,4 @@ df = pd.DataFrame({
     "Cluster": cluster_model
 })
 
-#output to CSV
-df.to_csv("hybrid_docx_topics_output.csv", index=False, encoding="utf-8")
+df.to_csv("hybrid_docx_topics_output.csv", index=False, encoding="utf-8") #output to csv; change .csv name here
