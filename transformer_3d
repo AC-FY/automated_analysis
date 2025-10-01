@@ -1,0 +1,222 @@
+import json
+import re
+from pathlib import Path
+import nltk
+from nltk.tokenize import sent_tokenize, word_tokenize
+import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from sentence_transformers import SentenceTransformer
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import PCA
+from docx import Document
+
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+INPUT_FOLDER = Path("/Users/AndyCheng/Documents/202507transcripts")     #input path
+OUTPUT_FOLDER = Path("/Users/AndyCheng/Documents")      #output path
+FILE_TYPE = "docx"      #docx or json
+N_CLUSTERS = 6
+MODEL_NAME = "all-MiniLM-L6-v2"
+EXTRA_STOPWORDS = None
+ENTITIES_JSON = None
+STOPWORDS_FILE = Path("/Users/AndyCheng/Documents/stopwords.txt")       #stopwords path
+
+def ensure_nltk():
+    nltk.download("punkt", quiet=True)
+
+def get_stopwords(extra_sw=None):
+    sw = set()
+    if STOPWORDS_FILE.exists():
+        with STOPWORDS_FILE.open("r", encoding="utf-8") as f:
+            sw |= {line.strip().lower() for line in f if line.strip()}
+    if extra_sw:
+        sw |= set(x.strip().lower() for x in extra_sw if x.strip())
+    return sw
+
+def sent_split(text):
+    return [s.strip() for s in sent_tokenize(text) if s.strip()]
+
+def tokenize(text):
+    return [w for w in word_tokenize(text)]
+
+def normalize_tokens(tokens):
+    return [t.lower() for t in tokens]
+
+def filter_stopwords(tokens, sw):
+    return [t for t in tokens if t not in sw and len(t) > 1]
+
+def make_bigrams(tokens):
+    return [f"{a}_{b}" for a, b in zip(tokens, tokens[1:])]
+
+def read_docx(path: Path) -> str:
+    doc = Document(str(path))
+    return "\n".join(p.text for p in doc.paragraphs)
+
+def read_json(path: Path) -> str:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict) and "text" in data:
+        return str(data["text"])
+    elif isinstance(data, list):
+        return "\n".join(str(x.get("text", "")) for x in data if isinstance(x, dict))
+    return ""
+
+def read_files(input_folder: Path, file_type: str):
+    items = []
+    if file_type == "docx":
+        for fname in sorted(input_folder.glob("*.docx")):
+            items.append((fname.name, read_docx(fname)))
+    elif file_type == "json":
+        for fname in sorted(input_folder.glob("*.json")):
+            items.append((fname.name, read_json(fname)))
+    else:
+        raise ValueError("FILE_TYPE must be 'docx' or 'json'")
+    return items
+
+def default_entities():
+    return {
+        "people": ["trump","biden","obama","clinton","putin"],
+        "orgs": ["nasa","nato","who","un","google","microsoft"],
+        "places": ["chicago","new york","beijing","moscow","paris"]
+    }
+
+def find_entities(texts, entities_dict):
+    rows = []
+    for idx, s in enumerate(texts):
+        low = s.lower()
+        found = []
+        for cat, terms in entities_dict.items():
+            for term in terms:
+                if re.search(rf"\b{re.escape(term.lower())}\b", low):
+                    found.append((cat, term))
+        rows.append({"unit_id": idx, "entities": ";".join(f"{c}:{t}" for c,t in found)})
+    return rows
+
+def get_embeddings(sentences, model_name):
+    model = SentenceTransformer(model_name)
+    emb = model.encode(sentences, show_progress_bar=False, normalize_embeddings=True)
+    return np.array(emb, dtype=np.float32)
+
+def label_clusters(sentences, labels, sw, top_k=6):
+    df = [{"text": s, "cluster": int(lbl)} for s, lbl in zip(sentences, labels)]
+    texts_by_cluster = {}
+    for r in df:
+        texts_by_cluster.setdefault(r["cluster"], []).append(r["text"])
+    out = {}
+    for c, texts in texts_by_cluster.items():
+        vec = TfidfVectorizer(
+            max_features=4096,
+            stop_words=list(sw),
+            ngram_range=(1,2)
+        )
+        X = vec.fit_transform(texts)
+        sums = np.asarray(X.sum(axis=0)).ravel()
+        feats = np.array(vec.get_feature_names_out())
+        order = np.argsort(-sums)[:top_k]
+        out[c] = feats[order].tolist()
+    return out
+
+def build_dataframe(sources, sentences, tokens_list, bigrams_list, labels, cluster_terms, entities_rows):
+    rows = []
+    for i, (src, sent, toks, bigs, lbl) in enumerate(zip(sources, sentences, tokens_list, bigrams_list, labels)):
+        ent = next((r["entities"] for r in entities_rows if r["unit_id"] == i), "")
+        rows.append({
+            "unit_id": i,
+            "text": sent,
+            "cluster": int(lbl),
+            "cluster_top_terms": ";".join(cluster_terms.get(int(lbl), []))
+        })
+    return pd.DataFrame(rows)
+
+def maybe_plot(emb, labels, out_png, out_html=None):
+    if emb.shape[1] > 2:
+        emb2d = PCA(n_components=2, random_state=42).fit_transform(emb)
+    else:
+        emb2d = emb if emb.shape[1] == 2 else np.hstack([emb, np.zeros((emb.shape[0], 2 - emb.shape[1]))])
+
+    xs, ys = emb2d[:,0], emb2d[:,1]
+    plt.figure()
+    plt.scatter(xs, ys, s=12, alpha=0.8, c=labels)
+    plt.title("Sentence clusters (2D PCA)")
+    plt.xlabel("PC1")
+    plt.ylabel("PC2")
+    plt.tight_layout()
+    plt.savefig(out_png)
+    plt.close()
+
+    if out_html is not None:
+        if emb.shape[1] > 3:
+            emb3d = PCA(n_components=3, random_state=42).fit_transform(emb)
+        elif emb.shape[1] == 3:
+            emb3d = emb
+        elif emb.shape[1] == 2:
+            emb3d = np.hstack([emb, np.zeros((emb.shape[0], 1))])
+        else:
+            emb3d = np.hstack([emb, np.zeros((emb.shape[0], 3 - emb.shape[1]))])
+
+        import plotly.express as px
+        fig = px.scatter_3d(
+            x=emb3d[:, 0], y=emb3d[:, 1], z=emb3d[:, 2],
+            color=[str(int(c)) for c in labels],
+            opacity=0.85
+        )
+        fig.update_layout(
+            title="Sentence clusters (3D PCA)",
+            scene=dict(xaxis_title="PC1", yaxis_title="PC2", zaxis_title="PC3")
+        )
+        fig.write_html(str(out_html))
+
+def main():
+    ensure_nltk()
+    OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+
+    items = read_files(INPUT_FOLDER, FILE_TYPE)
+    sources = []
+    sentences = []
+    for fname, text in items:
+        sents = sent_split(text)
+        if not sents:
+            sents = [text.strip()] if text.strip() else []
+        sources.extend([fname] * len(sents))
+        sentences.extend(sents)
+
+    extra_sw = [s.strip() for s in (EXTRA_STOPWORDS or "").split(",") if s.strip()]
+    sw = get_stopwords(extra_sw)
+
+    tokens_list = []
+    bigrams_list = []
+    for s in sentences:
+        toks = filter_stopwords(normalize_tokens(tokenize(s)), sw)
+        tokens_list.append(toks)
+        bigrams_list.append(make_bigrams(toks))
+
+    entities_dict = default_entities()
+    if ENTITIES_JSON and Path(ENTITIES_JSON).exists():
+        entities_dict = json.loads(Path(ENTITIES_JSON).read_text(encoding="utf-8"))
+
+    entities_rows = find_entities(sentences, entities_dict)
+    emb = get_embeddings(sentences, MODEL_NAME)
+
+    km = KMeans(n_clusters=N_CLUSTERS, random_state=42, n_init=10)
+    labels = km.fit_predict(emb)
+    cluster_terms = label_clusters(sentences, labels, sw)
+
+    df = build_dataframe(sources, sentences, tokens_list, bigrams_list, labels, cluster_terms, entities_rows)
+
+    out_csv = OUTPUT_FOLDER / "clusters.csv"
+    out_jsonl = OUTPUT_FOLDER / "clusters.jsonl"
+    out_png = OUTPUT_FOLDER / "clusters.png"
+
+    df.to_csv(out_csv, index=False)
+    with out_jsonl.open("w", encoding="utf-8") as f:
+        for _, row in df.iterrows():
+            f.write(json.dumps(row.to_dict(), ensure_ascii=False) + "\n")
+
+    maybe_plot(emb, labels, out_png, OUTPUT_FOLDER / "test_3d.html")
+
+if __name__ == "__main__":
+    main()
