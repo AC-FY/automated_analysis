@@ -5,8 +5,9 @@ Currently, the automated analysis pipeline is dependent on three separate proces
 Data scraping is consisted of sub-processes: Rumble scraping and Telegram scraping.
 
 Rumble scraping is performed by rumble_scraper_v3.py and bulk_download_mp3.py.
+
 Telegram scraping is performed by the weekly-run legacy Telegram scraper codes from Will Fitz.
 
-Data merging is 
+Data merging is performed by json_csv.py.
 
 BERT_LDA.py is for document classification, and BERT_LDA_v2.py is for sentence-by-sentence classification.
