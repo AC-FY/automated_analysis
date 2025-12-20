@@ -1,6 +1,6 @@
 This is a repo for CPOST APV automated analysis codes.
 
-Currently, the automated analysis pipeline is dependent on three separate processes: data scraping, data merging ,and topic classification.
+Currently, the automated analysis pipeline is dependent on three separate processes: data scraping, merging, parsing, and topic classification.
 
 Data scraping is consisted of sub-processes: Rumble scraping and Telegram scraping.
 
