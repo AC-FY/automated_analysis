@@ -1,15 +1,16 @@
 import pandas as pd
 
-# search configuration #
-SEARCH_NAMES = [
+# search config #
+SEARCH_NAMES = [ # put all the names you want to search here #
     '[]',
     '[]',
     '[]'
 ]
-OUTPUT_FILE = '[].csv'
+OUTPUT_FILE = '[].csv' # change output file name #
 CASE_SENSITIVE = True
 PARTIAL_MATCH = True
 
+# intake config #
 CSV_FILE_1 = 'tweet_threats.csv'
 SEARCH_COLUMN_1 = 'NameLast'
 CSV_FILE_2 = 'tta_data.csv'
