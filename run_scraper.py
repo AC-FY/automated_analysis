@@ -1,4 +1,4 @@
-from x_scraper import TwitterScraper
+from twitter_scraper import TwitterScraper
 BEARER_TOKEN = "enter bearer token here"
 	# bearer token 1 ## AAAAAAAAAAAAAAAAAAAAAJNK4gEAAAAA5GRNQU3EqL15JtTzcwOJf9hMIM4%3DinRS3tLGz2fJIo0T8GDXAqTJcEHcbOLP88rpH94Jf3b70GvyCh
 	# bearer token 2 ## AAAAAAAAAAAAAAAAAAAAAGzn4gEAAAAAHUG7LIA%2FH9%2FmTPtf3ciwycfTeUc%3DXnCeyKuGAoSgZnusheP4WkQHzO5UBwv16QNJl82J52QpDTLY44
